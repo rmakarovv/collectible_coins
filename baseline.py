@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 # Change the following paths to run the script
 PATH_TO_CSV = "./1k-coins-dataset-no-pr.csv"
-PATH_TO_DATA = "/1k-coins-dataset-no-pr"
+PATH_TO_DATA = "1k-coins-dataset-no-pr/"
 
 df = pd.read_csv(PATH_TO_CSV)
 df_ms = df[df["grade"].str.startswith("MS")]
