@@ -110,10 +110,10 @@ def build_dataset(tar_pattern: str, meta_csv: Path, grades: list):
 
 
 class CoinCLIP(nn.Module):
-    def __init__(self, text_prompts: list):
+    def __init__(self, text_prompts: list, model: str = "openai/clip-vit-base-patch32"):
         super().__init__()
-        self.clip = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        self.clip = CLIPModel.from_pretrained(model)
+        self.processor = CLIPProcessor.from_pretrained(model)
 
         tokenized = self.processor(
             text=text_prompts,
@@ -164,7 +164,7 @@ def train(args):
         ds_te, batch_size=args.batch_size, num_workers=8, pin_memory=True
     )
 
-    model = CoinCLIP(prompts).to(device)
+    model = CoinCLIP(prompts, args.model).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.wd)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs)
     criterion = nn.CrossEntropyLoss()
@@ -226,6 +226,7 @@ if __name__ == "__main__":
         type=str,
         default="/1k-coins-dataset-no-pr/test-dataset-{0000..0003}.tar",
     )
+    p.add_argument("--model", type=str, default="openai/clip-vit-base-patch32")
     p.add_argument("--meta_csv", type=Path, default="./1k-coins-dataset-no-pr.csv")
     p.add_argument("--grades_csv", type=Path, default="./Grades descriptions.csv")
     p.add_argument("--batch_size", type=int, default=32)
