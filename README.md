@@ -4,8 +4,6 @@
 
 This project applies deep learning techniques to the automated grading of collectible coins, using both CNNs & ViT, and CLIP-based models. The goal is to classify coins into standard grading categories based on high-resolution images of their obverse and reverse sides.
 
----
-
 ## Dataset
 
 - Download from HuggingFace using `download_data.sh` (the dataset is private and requires a specialized access, ask us explicitly)
@@ -15,7 +13,7 @@ This project applies deep learning techniques to the automated grading of collec
   - Grade descriptions: `Grades descriptions.csv`
 
 Grades follow the standard MS (Mint State), AU (About Uncirculated), XF (Extremely Fine), VF (Very Fine), F (Fine), VG (Very Good), G (Good), AG (About Good), FR (Fair), PO (Poor) scale. We focuse on MS grades, see `Grades descriptions.csv` for detailed definitions.
----
+
 
 ## Environment Setup
 
@@ -24,7 +22,6 @@ Grades follow the standard MS (Mint State), AU (About Uncirculated), XF (Extreme
 
     ```pip install -r requirements.txt```
 
----
 
 ## Running Experiments
 
@@ -53,7 +50,6 @@ Grades follow the standard MS (Mint State), AU (About Uncirculated), XF (Extreme
   ```
 - You can also run separate `fusion_clip.py` (for fused image embeddings), and evaluation scripts `eval.py` & `eval_basic_clip.py`
 
----
 
 ## Results
 
