@@ -13,5 +13,6 @@ for exp in config["experiments"]:
         f"--learning_rate={exp['learning_rate']}",
         f"--batch_size={exp['batch_size']}",
         f"--run_name={exp['name']}"
+        f"--run_name={exp['img_size']}"
     ]
     subprocess.run(args)

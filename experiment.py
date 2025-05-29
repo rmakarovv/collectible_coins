@@ -3,9 +3,10 @@ import glob
 import os
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 import torch
 import webdataset as wds
-from sklearn.metrics import accuracy_score, confusion_matrix, f1_score
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, top_k_accuracy_score
 from torch import nn, optim
 from torch.utils.data import DataLoader, IterableDataset
 from torchvision import transforms
@@ -16,9 +17,17 @@ from torchvision.models import (
     resnet50, ResNet50_Weights,
 )
 from pytorch_pretrained_vit import ViT
+from transformers import CLIPModel
 from tqdm import tqdm
 
 import wandb
+
+def top_k_f1_score(y_true, y_pred_probs, k=5):
+    top_k_preds = np.argsort(y_pred_probs, axis=1)[:, -k:]
+    hits = [1 if y_true[i] in top_k_preds[i] else 0 for i in range(len(y_true))]
+    from sklearn.metrics import precision_recall_fscore_support
+    precision, recall, f1, _ = precision_recall_fscore_support(hits, hits, average='binary')
+    return f1
 
 # ==== Argument Parsing ====
 def parse_args():
@@ -28,11 +37,11 @@ def parse_args():
     parser.add_argument("--augmentation", type=str, default="baseline", choices=["baseline", "strong"])
     parser.add_argument("--learning_rate", type=float, default=3e-4)
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--num_epochs", type=int, default=5)
+    parser.add_argument("--num_epochs", type=int, default=20)
     parser.add_argument("--run_name", type=str, default="experiment")
     parser.add_argument("--alpha", type=float, default=0.7, help="Alpha for weighted feeding")
     parser.add_argument("--seed", type=int, default=42)
-    parser.add_argument("--img_size", type=int, default=128)
+    parser.add_argument("--img_size", type=int, default=224)
     return parser.parse_args()
 
 # ==== Data Preparation ====
@@ -216,6 +225,32 @@ def get_model(model_name, feed_strategy, num_classes):
         model = ViT('B_16_imagenet1k', pretrained=True)
         # Replace classifier head
         model.head = nn.Linear(model.head.in_features, num_classes)
+    
+    elif model_name == "clip":
+        # Load CLIP model from HuggingFace Transformers
+        clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+
+        class ClipClassifier(nn.Module):
+            def __init__(self, clip_model, num_classes):
+                super().__init__()
+                self.clip_model = clip_model
+                # CLIP's image embedding dim (projection_dim)
+                emb_dim = clip_model.config.projection_dim
+                self.cls_head = nn.Sequential(
+                    nn.Linear(2 * emb_dim, 4*emb_dim),
+                    nn.GELU(),
+                    nn.Linear(4*emb_dim, num_classes)
+                )
+
+            def forward(self, x):
+                # x shape: (batch_size, 6, H, W)
+                x1, x2 = x[:, :3], x[:, 3:]
+                emb1 = self.clip_model.get_image_features(pixel_values=x1)
+                emb2 = self.clip_model.get_image_features(pixel_values=x2)
+                combined = torch.cat([emb1, emb2], dim=1)
+                return self.cls_head(combined)
+
+        model = ClipClassifier(clip_model, num_classes)
 
     else:
         raise ValueError(f"Unknown model: {model_name}")
@@ -292,27 +327,38 @@ def main():
         # Log checkpoint as artifact
         wandb.save(ckpt_path)
 
-        # Evaluation
         model.eval()
         all_preds, all_labels = [], []
+        all_probs = []
         with torch.no_grad():
             for imgs, labels in tqdm(test_loader, desc=f"Epoch {epoch} [Eval]", leave=False):
                 imgs, labels = imgs.to(device), labels.to(device)
                 outputs = model(imgs)
+                probs = torch.softmax(outputs, dim=1)
                 preds = outputs.argmax(dim=1)
                 all_preds.extend(preds.cpu().tolist())
                 all_labels.extend(labels.cpu().tolist())
+                all_probs.append(probs.cpu().numpy())
+        all_probs = np.concatenate(all_probs, axis=0)
+
         acc = accuracy_score(all_labels, all_preds)
         f1 = f1_score(all_labels, all_preds, average="weighted")
-        print(f"Epoch {epoch}: Accuracy: {acc:.4f}, F1 Score: {f1:.4f}")
+        top5_acc = top_k_accuracy_score(all_labels, all_probs, k=5)
+        top5_f1 = top_k_f1_score(all_labels, all_probs, k=5)
+        mae = np.mean(np.abs(np.array(all_labels) - np.array(all_preds)))
 
-        # Log metrics
+        print(f"Epoch {epoch}: Accuracy: {acc:.4f}, F1 Score: {f1:.4f}, MAE: {mae:.4f}, Top-5 Acc: {top5_acc:.4f}, Top-5 F1: {top5_f1:.4f}")
+
         wandb.log({
             "epoch": epoch,
             "train_loss": epoch_loss,
             "test_accuracy": acc,
             "test_f1": f1,
+            "test_mae": mae,
+            "test_top5_accuracy": top5_acc,
+            "test_top5_f1": top5_f1,
         })
+
 
         # Confusion matrix
         cm = confusion_matrix(all_labels, all_preds)
@@ -332,7 +378,7 @@ def main():
     final_ckpt = os.path.join(ckpt_dir, f"{args.run_name}_epoch_{args.num_epochs}.pt")
     wandb.save(final_ckpt)
     # Optionally, log the model weights directly
-    torch.save(model.state_dict(), f"{args.run_name}_final_model.pt")
+    torch.save(model.state_dict(), f"models/{args.run_name}_final_model.pt")
     wandb.save(f"{args.run_name}_final_model.pt")
     wandb.finish()
 
