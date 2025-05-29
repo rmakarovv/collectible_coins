@@ -1,0 +1,64 @@
+experiments:
+  - name: baseline_channel
+    model: efficientnet_b0
+    feeding: channel
+    augmentation: baseline
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: strong_aug_width
+    model: efficientnet_b0
+    feeding: width
+    augmentation: strong
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: effnet_b1_channel
+    model: efficientnet_b1
+    feeding: channel
+    augmentation: baseline
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: resnet18_channel
+    model: resnet18
+    feeding: channel
+    augmentation: baseline
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: resnet18_width
+    model: resnet18
+    feeding: width
+    augmentation: baseline
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: resnet50_average
+    model: resnet50
+    feeding: average
+    augmentation: strong
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: vit_b_16_height
+    model: vit_b_16
+    feeding: height
+    augmentation: baseline
+    learning_rate: 0.0003
+    batch_size: 128
+
+  - name: effnet_b0_weighted
+    model: efficientnet_b0
+    feeding: weighted
+    augmentation: strong
+    learning_rate: 0.0003
+    batch_size: 128
+    alpha: 0.6
+
+  - name: resnet50_channel_strong
+    model: resnet50
+    feeding: channel
+    augmentation: strong
+    learning_rate: 0.0003
+    batch_size: 128
