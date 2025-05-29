@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project applies deep learning techniques to the automated grading of collectible coins, using both CNNs & ViT, and CLIP-based models. The goal is to classify coins into standard grading categories based on high-resolution images of their obverse and reverse sides.
+This project applies deep learning techniques to the automated grading of collectible coins, using both CNNs & ViT, and CLIP-based models. The goal is to classify coins into standard grading categories based on images of their obverse and reverse sides.
 
 ## Dataset
 
@@ -53,7 +53,7 @@ Grades follow the standard MS (Mint State), AU (About Uncirculated), XF (Extreme
 
 ## Results
 
-Refer to our [presentation](https://docs.google.com/presentation/d/1CVD5CG28uZbv8Vkx4JBlqxHzR_xIpRIAGOdAHoBm3bo/edit?usp=sharing) for an overview of results.
+Refer to our [presentation](https://docs.google.com/presentation/d/1NkimzHpAXVVBqWV8VlAWQpKmUBmVJrPm1lUFjNioy10/edit?usp=sharing) for an overview of results.
 
 ## Authors
 - Maxim Alymov
