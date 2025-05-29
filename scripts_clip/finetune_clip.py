@@ -1,6 +1,9 @@
 import argparse
+import os
+import random
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import torch
 import webdataset as wds
@@ -10,7 +13,16 @@ from torchvision import transforms
 from tqdm import tqdm
 from transformers import CLIPModel, CLIPProcessor
 
-torch.backends.cudnn.benchmark = True
+
+def set_seed(seed: int = 42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    os.environ["PYTHONHASHSEED"] = str(seed)
 
 
 def load_grade_prompts(csv_path: Path):
@@ -64,12 +76,12 @@ def build_dataset(tar_pattern: str, meta_csv: Path, grades):
     if "train" in tar_pattern:
         transform = transforms.Compose(
             [
-                # transforms.RandomResizedCrop(224, scale=(0.8, 1.0)),
-                transforms.Resize(224, interpolation=transforms.InterpolationMode.BICUBIC),
+                transforms.Resize(
+                    224, interpolation=transforms.InterpolationMode.BICUBIC
+                ),
                 transforms.RandomHorizontalFlip(p=0.3),
                 transforms.RandomVerticalFlip(p=0.3),
                 transforms.RandomRotation(20),
-                # transforms.Grayscale(num_output_channels=3),
                 transforms.ToTensor(),
                 normalize,
             ]
@@ -80,8 +92,6 @@ def build_dataset(tar_pattern: str, meta_csv: Path, grades):
                 transforms.Resize(
                     224, interpolation=transforms.InterpolationMode.BICUBIC
                 ),
-                # transforms.CenterCrop(224),
-                # transforms.Grayscale(num_output_channels=3),
                 transforms.ToTensor(),
                 normalize,
             ]
@@ -215,5 +225,5 @@ if __name__ == "__main__":
     p.add_argument("--batch_size", type=int, default=32)
     p.add_argument("--epochs", type=int, default=20)
     p.add_argument("--lr", type=float, default=1e-5)
-    p.add_argument("--out_dir", type=str, default="checkpoints")
+    p.add_argument("--out_dir", type=str, default="checkpoints_clip")
     train(p.parse_args())
