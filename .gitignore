@@ -1,0 +1,8 @@
+metrics/
+checkpoints/
+1k*/
+1k*
+mlruns/
+wandb/
+*.pt
+models/
